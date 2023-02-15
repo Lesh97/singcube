@@ -6,14 +6,14 @@ const videoSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    minLength: 10,
+    minLength: 2,
     maxLength: 100,
   },
   description: {
     type: String,
     required: true,
     trim: true,
-    minLength: 20,
+    minLength: 2,
     maxLength: 100,
   },
   //Date.now에 ()를 안하는 이유는 바로 실행시키지 않기 위해서

@@ -20,16 +20,31 @@ export const watch = async (req, res) => {
 };
 export const getEdit = async (req, res) => {
   const { id } = req.params;
-  //edit할 영상이 있는지 확인
+  //video object가 있어야 함 edit template로 보내줘야 하기 때문에 꼭 필요함
   const video = await Video.findById(id);
   if (!video) {
     return res.render("404", { pageTitle: "Video not found." });
   }
   return res.render("edit", { pageTitle: `Edit: ${video.title}`, video });
 };
-export const postEdit = (req, res) => {
+export const postEdit = async (req, res) => {
   const { id } = req.params;
-  const { title } = req.body;
+  const { title, description, hashtags } = req.body;
+  // video = 데이터베이스에서 검색한 영상 object
+  //post는 영상의 유무만 파악하면 되서 exist를 사용
+  const video = await Video.exists({_id: id});
+  if (!video) {
+    return res.render("404", { pageTitle: "Video not found." });
+  }
+  //Video = model에서 가져온 것
+  await Video.findByIdAndUpdate(id, {
+    title,
+    description,
+    hashtags: hashtags
+      .split(",")
+      .map((word) => (word.startsWith("#") ? word : `#${word}`)),
+  });
+
   return res.redirect(`/videos/${id}`);
 };
 
@@ -40,15 +55,15 @@ export const getUpload = (req, res) => {
 export const postUpload = async (req, res) => {
   const { title, description, hashtags } = req.body;
   try {
+    new Video({});
     await Video.create({
       title,
       description,
-      hashtags: hashtags.split(",").map((word) => `#${word}`),
-      meta: {
-        views: 0,
-        rating: 0,
-      },
+      hashtags: hashtags
+        .split(",")
+        .map((word) => (word.startsWith("#") ? word : `#${word}`)),
     });
+    return res.redirect("/");
   } catch (error) {
     console.log(error);
     return res.render("upload", {
