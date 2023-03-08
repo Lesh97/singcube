@@ -9,11 +9,19 @@ const videoSchema = new mongoose.Schema({
     minLength: 2,
     maxLength: 100,
   },
+  fileUrl: {
+    type: String,
+    required: true,
+  },
+  thumbUrl: {
+    type: String,
+    required: true,
+  },
   description: {
     type: String,
     required: true,
     trim: true,
-    minLength: 2,
+    minLength: 1,
     maxLength: 100,
   },
   //Date.now에 ()를 안하는 이유는 바로 실행시키지 않기 위해서
@@ -23,6 +31,20 @@ const videoSchema = new mongoose.Schema({
     views: { type: Number, default: 0, required: true },
     rating: { type: Number, default: 0, required: true },
   },
+  comments: [
+    { type: mongoose.Schema.Types.ObjectId, required: true, ref: "Comment" },
+  ],
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: "User",
+  },
+});
+
+videoSchema.static("fortmatHastags", function (hashtags) {
+  return hashtags
+    .split(",")
+    .map((word) => (word.startsWith("#") ? word : `#${word}`));
 });
 
 const Video = mongoose.model("Video", videoSchema);

@@ -2,8 +2,8 @@ extends base.pug
 include mixins/video
 
 block content   
-    ul
-        each potato in videos
-            +video(potato)
-        else  
-            li sorry nothing found.
+    div.video-grid
+        each video in videos
+            +video(video)
+        else
+            span.empty__message 영상을 찾지 못했습니다.

@@ -1,6 +1,240 @@
-export const join = (req, res) => res.send("join");
-export const edit = (req, res) => res.send("Edit Users");
-export const remove = (req, res) => res.send("Remove Users");
-export const login = (req, res) => res.send("Login");
-export const logout = (req, res) => res.send("Log Out");
-export const see = (req, res) => res.send("See User");
+import User from "../models/User";
+import fetch from "node-fetch";
+import bcrypt from "bcrypt";
+
+export const getJoin = (req, res) =>
+  res.render("join", { pageTitle: "Create Account" });
+export const postJoin = async (req, res) => {
+  const { name, username, email, password, password2, location } = req.body;
+  const pageTitle = "Join";
+  if (password !== password2) {
+    return res.status(400).render("join", {
+      pageTitle,
+      errorMessage: "비밀번호와 확인비밀번호가 일치하지 않습니다.",
+    });
+  }
+  const exists = await User.exists({ $or: [{ username }, { email }] });
+  if (exists) {
+    return res.status(400).render("join", {
+      pageTitle,
+      errorMessage: "이름 혹은 이메일이 이미 사용중입니다.",
+    });
+  }
+
+  try {
+    await User.create({
+      name,
+      username,
+      email,
+      password,
+      location,
+    });
+  } catch (error) {
+    return res.status(400).render("join", {
+      pageTitle,
+      errorMessage: error._message,
+    });
+  }
+  return res.redirect("/login");
+};
+export const getLogin = (req, res) =>
+  res.render("login", { pageTitle: "Login" });
+
+export const postLogin = async (req, res) => {
+  const pageTitle = "Login";
+  const { username, password } = req.body;
+  // 유저이름 유효성검사
+  const user = await User.findOne({ username, socialOnly: false });
+  if (!user) {
+    return res.status(400).render("login", {
+      pageTitle,
+      errorMessage: "사용자 이름의 계정이 존재하지 않습니다. ",
+    });
+  }
+  // 비밀번호 유효성검사
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) {
+    return res.status(400).render("login", {
+      pageTitle,
+      errorMessage: "잘못된 비밀번호입니다. ",
+    });
+  }
+  req.session.loggedIn = true;
+  req.session.user = user;
+  return res.redirect("/");
+};
+
+export const startGithubLogin = (req, res) => {
+  const baseUrl = "https://github.com/login/oauth/authorize";
+  const config = {
+    client_id: process.env.GH_CLIENT,
+    scope: "read:user user:email",
+  };
+  const params = new URLSearchParams(config).toString();
+  const finalUrl = `${baseUrl}?${params}`;
+  return res.redirect(finalUrl);
+};
+
+export const finishGithunLogin = async (req, res) => {
+  const baseUrl = "https://github.com/login/oauth/access_token";
+  const config = {
+    client_id: process.env.GH_CLIENT,
+    client_secret: process.env.GH_SECRET,
+    code: req.query.code,
+  };
+  const params = new URLSearchParams(config).toString();
+  const finalUrl = `${baseUrl}?${params}`;
+  const tokenRequest = await (
+    await fetch(finalUrl, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
+    })
+  ).json();
+  if ("access_token" in tokenRequest) {
+    const { access_token } = tokenRequest;
+    const apiUrl = "https://api.github.com";
+    const userData = await (
+      await fetch(`${apiUrl}/user`, {
+        headers: {
+          Authorization: `token ${access_token}`,
+        },
+      })
+    ).json();
+    const emailData = await (
+      await fetch(`${apiUrl}/user/emails`, {
+        headers: {
+          Authorization: `token ${access_token}`,
+        },
+      })
+    ).json();
+    const emailObj = emailData.find(
+      (email) => email.primary === true && email.verified === true
+    );
+    if (!emailObj) {
+      return res.redirect("/login");
+    }
+    //깃허브에서 준 이메일과 같은 이메일이 DB에 존재한다면 로그인을 시켜줌
+    let user = await User.findOne({ email: emailObj.email });
+    if (!user) {
+      //데이터베이스에 해당 email을 가진 user가 없을 때.
+      //user를 새로만든 user로 정의함
+      user = await User.create({
+        avatarUrl: userData.avatar_url,
+        name: userData.name,
+        username: userData.login,
+        email: emailObj.email,
+        //password로 로그인 할 수 없음
+        password: "",
+        //오직 소셜 로그인으로만 로그인 가능함
+        socialOnly: true,
+        location: userData.location,
+      });
+    }
+    req.session.loggedIn = true;
+    req.session.user = user;
+    return res.redirect("/");
+  } else {
+    return res.redirect("/login");
+  }
+};
+
+export const logout = (req, res) => {
+  req.session.destroy();
+  req.flash("info", "로그아웃 되었습니다");
+  return res.redirect("/");
+};
+
+export const getEdit = (req, res) => {
+  return res.render("edit-profile", { pageTitle: "프로필 수정" });
+};
+export const postEdit = async (req, res) => {
+  //ES6문법
+  const {
+    session: {
+      user: { _id, avatarUrl },
+    },
+    body: { email, name, username, location },
+    file,
+  } = req;
+
+  const updatedUser = await User.findByIdAndUpdate(
+    _id,
+    {
+      avatarUrl: file ? file.path : avatarUrl,
+      name,
+      email,
+      username,
+      location,
+    },
+    { new: true }
+  );
+  req.session.user = updatedUser;
+  return res.redirect("/users/edit");
+};
+
+export const getChangePassword = (req, res) => {
+  if (req.session.user.socialOnly === true) {
+    req.flash(
+      "error",
+      "비밀번호를 변경할 수 없습니다. : 깃허브 로그인 사용자입니다."
+    );
+    return res.redirect("/");
+  }
+  return res.render("users/change-password", {
+    pageTitle: "비밀번호 변경하기",
+  });
+};
+
+export const postChangePassword = async (req, res) => {
+  const {
+    session: {
+      user: { _id },
+    },
+    body: { oldPassword, newPassword, newPasswordConfirmation },
+  } = req;
+  const user = await User.findById(_id);
+  const ok = await bcrypt.compare(oldPassword, user.password);
+  if (!ok) {
+    return res.status(400).render("users/change-password", {
+      pageTitle: "비밀번호 변경하기",
+      errorMessage: "현재 비밀번호가 일치하지 않습니다.",
+    });
+  }
+  if (oldPassword == newPassword) {
+    return res.status(400).render("users/change-password", {
+      pageTitle: "비밀번호 변경하기",
+      errorMessage: "변경 비밀번호가 이전 비밀번호와 일치합니다.",
+    });
+  }
+  if (newPassword !== newPasswordConfirmation) {
+    return res.status(400).render("users/change-password", {
+      pageTitle: "비밀번호 변경하기",
+      errorMessage: "변경한 비밀번호와 확인 비밀번호가 일치하지 않습니다. ",
+    });
+  }
+
+  user.password = newPassword;
+  await user.save();
+  req.flash("info", "비밀번호가 변경되었습니다.");
+  req.session.destroy();
+  return res.redirect("/login");
+};
+export const see = async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(id).populate({
+    path: "videos",
+    populate: {
+      path: "owner",
+      model: "User",
+    },
+  });
+  if (!user) {
+    return res
+      .status(404)
+      .render("404", { pageTitle: "사용자를 찾지 못했습니다." });
+  }
+
+  return res.render("users/profile", { pageTitle: user.name, user });
+};

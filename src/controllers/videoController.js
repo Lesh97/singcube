@@ -1,75 +1,177 @@
 import Video from "../models/Video";
+import User from "../models/User";
+import Comment from "../models/Comment";
+import { async } from "regenerator-runtime";
 
 export const home = async (req, res) => {
   //데이터베이스를 확인하고 렌더링
   try {
-    const videos = await Video.find({});
+    const videos = await Video.find({})
+      .sort({ createdAt: "desc" })
+      .populate("owner");
     res.render("home", { pageTitle: "Home", videos });
   } catch (error) {
     return res.render("error-server", { error });
   }
 };
+
 export const watch = async (req, res) => {
   const { id } = req.params;
   // 영상이 있는지 확인
-  const video = await Video.findById(id);
+  const video = await Video.findById(id).populate("owner").populate("comments");
   if (!video) {
-    return res.render("404", { pageTitle: "Video not found." });
+    return res.render("404", { pageTitle: "영상을 찾지 못했습니다." });
   }
   return res.render("watch", { pageTitle: video.title, video });
 };
+
 export const getEdit = async (req, res) => {
   const { id } = req.params;
+  const {
+    user: { _id },
+  } = req.session;
   //video object가 있어야 함 edit template로 보내줘야 하기 때문에 꼭 필요함
   const video = await Video.findById(id);
   if (!video) {
-    return res.render("404", { pageTitle: "Video not found." });
+    return res.render("404", { pageTitle: "영상을 찾지 못했습니다." });
+  }
+  if (String(video.owner) !== String(_id)) {
+    return res.status(403).redirect("/");
   }
   return res.render("edit", { pageTitle: `Edit: ${video.title}`, video });
 };
 export const postEdit = async (req, res) => {
+  const {
+    user: { _id },
+  } = req.session;
   const { id } = req.params;
   const { title, description, hashtags } = req.body;
   // video = 데이터베이스에서 검색한 영상 object
   //post는 영상의 유무만 파악하면 되서 exist를 사용
-  const video = await Video.exists({_id: id});
+  const video = await Video.exists({ _id: id });
   if (!video) {
-    return res.render("404", { pageTitle: "Video not found." });
+    return res
+      .status(404)
+      .render("404", { pageTitle: "영상을 찾지 못했습니다." });
+  }
+  if (String(video.owner) !== String(_id)) {
+    req.flash("error", "동영상의 소유자가 아닙니다.");
+    return res.status(403).redirect("/");
   }
   //Video = model에서 가져온 것
   await Video.findByIdAndUpdate(id, {
     title,
     description,
-    hashtags: hashtags
-      .split(",")
-      .map((word) => (word.startsWith("#") ? word : `#${word}`)),
+    hashtags: Video.fortmatHastags(hashtags),
   });
-
+  req.flash("success", "변경이 완료되었습니다.");
   return res.redirect(`/videos/${id}`);
 };
 
 export const getUpload = (req, res) => {
-  return res.render("upload", { pageTitle: "Upload Video" });
+  return res.render("upload", { pageTitle: "영상 수정/추가" });
 };
-
 export const postUpload = async (req, res) => {
+  const {
+    user: { _id },
+  } = req.session;
+  const { video, thumb } = req.files;
   const { title, description, hashtags } = req.body;
   try {
-    new Video({});
-    await Video.create({
+    const newVideo = await Video.create({
       title,
       description,
-      hashtags: hashtags
-        .split(",")
-        .map((word) => (word.startsWith("#") ? word : `#${word}`)),
+      fileUrl: video[0].path,
+      thumbUrl: thumb[0].path.replace(/[\\]/g, "/"),
+      owner: _id,
+      hashtags: Video.fortmatHastags(hashtags),
     });
+    const user = await User.findById(_id);
+    user.videos.push(newVideo._id);
+    user.save();
     return res.redirect("/");
   } catch (error) {
     console.log(error);
-    return res.render("upload", {
-      pageTitle: "Upload Video",
+    return res.status(400).render("upload", {
+      pageTitle: "영상 수정/추가",
       errorMessage: error._message,
     });
   }
+};
+
+export const deleteVideo = async (req, res) => {
+  const { id } = req.params;
+  const {
+    user: { _id },
+  } = req.session;
+  const video = await Video.findById(id);
+  if (!video) {
+    return res
+      .status(404)
+      .render("404", { pageTitle: "영상을 찾지 못했습니다." });
+  }
+  if (String(video.owner) !== String(_id)) {
+    return res.status(403).redirect("/");
+  }
+  await Video.findByIdAndDelete(id);
   return res.redirect("/");
+};
+
+export const search = async (req, res) => {
+  const { keyword } = req.query;
+  let videos = [];
+  if (keyword) {
+    videos = await Video.find({
+      title: {
+        $regex: new RegExp(keyword, "i"),
+      },
+    }).populate("owner");
+  }
+  return res.render("search", { pageTitle: "검색", videos });
+};
+
+export const registerView = async (req, res) => {
+  const { id } = req.params;
+  const video = await Video.findById(id);
+  if (!video) {
+    return res.sendStatus(404);
+  }
+  video.meta.views = video.meta.views + 1;
+  await video.save();
+  return res.sendStatus(200);
+};
+
+export const createComment = async (req, res) => {
+  const {
+    session: { user },
+    body: { text },
+    params: { id },
+  } = req;
+
+  const video = await Video.findById(id);
+  if (!video) {
+    return res.sendStatus(404);
+  }
+  const comment = await Comment.create({
+    text,
+    owner: user._id,
+    video: id,
+  });
+  video.comments.push(comment._id);
+  video.save();
+  return res.status(201).json({ newCommentId: comment._id });
+};
+
+export const deleteComment = async (req, res) => {
+  const { id, videoid } = req.body;
+  const { _id } = req.session.user;
+  const { owner } = await Comment.findById(id);
+  const video = await Video.findById(videoid);
+  if (String(owner) !== _id) return res.sendStatus(403);
+  else {
+    await Comment.findByIdAndDelete(id);
+    video.comments.splice(video.comments.indexOf(videoid), 1);
+    video.save();
+    return res.sendStatus(200);
+  }
 };
