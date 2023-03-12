@@ -136,7 +136,9 @@ export const finishGithunLogin = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  req.session.destroy();
+  req.session.user = null;
+  res.locals.loggedInUser = req.session.user;
+  req.session.loggedIn = false;
   req.flash("info", "로그아웃 되었습니다");
   return res.redirect("/");
 };

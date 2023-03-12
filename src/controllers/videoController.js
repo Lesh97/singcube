@@ -6,7 +6,7 @@ import { async } from "regenerator-runtime";
 export const home = async (req, res) => {
   try {
     const videos = await Video.find({})
-      .sort({ rating: "desc" })
+      .sort({ createdAt: "desc" })
       .populate("owner");
     res.render("home", { pageTitle: "Home", videos });
   } catch (error) {
@@ -17,7 +17,7 @@ export const home = async (req, res) => {
 export const hotpage = async (req, res) => {
   try {
     const videos = await Video.find({})
-      .sort({ views: "desc" })
+      .sort({ meta: "desc" })
       .populate("owner");
     res.render("hotpage", { pageTitle: "Hot", videos });
   } catch (error) {
