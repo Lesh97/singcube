@@ -2,12 +2,12 @@ extends base.pug
 include mixins/video
 
 block content
+
     div.hotandnew
-        a(href="/hotpage")  HOT
         a(href="/newpage")  NEW
+        a(href="/")  HOME
     hr
-    div.maincategory
-        div 모든 동영상
+    h4 인기 동영상
     div.video-grid
         each video in videos
             +video(video)

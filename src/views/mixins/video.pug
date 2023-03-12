@@ -3,7 +3,7 @@ mixin video(video)
         if /^https?:\/\//.test(video.thumbUrl)
             img(src=video.thumbUrl crossorigin).video-mixin__thumb
         else
-            img(src=`/${video.thumbUrl}`).video-mixin__thumb
+            img(src=`/${video.thumbUrl}` crossorigin).video-mixin__thumb
         div.video-mixin__data
             span.video-mixin__title=video.title
             div.video-mixin__meta

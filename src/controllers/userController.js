@@ -43,7 +43,7 @@ export const getLogin = (req, res) =>
 export const postLogin = async (req, res) => {
   const pageTitle = "Login";
   const { username, password } = req.body;
-  // 유저이름 유효성검사
+
   const user = await User.findOne({ username, socialOnly: false });
   if (!user) {
     return res.status(400).render("login", {
@@ -51,7 +51,7 @@ export const postLogin = async (req, res) => {
       errorMessage: "사용자 이름의 계정이 존재하지 않습니다. ",
     });
   }
-  // 비밀번호 유효성검사
+
   const ok = await bcrypt.compare(password, user.password);
   if (!ok) {
     return res.status(400).render("login", {
@@ -115,19 +115,14 @@ export const finishGithunLogin = async (req, res) => {
     if (!emailObj) {
       return res.redirect("/login");
     }
-    //깃허브에서 준 이메일과 같은 이메일이 DB에 존재한다면 로그인을 시켜줌
     let user = await User.findOne({ email: emailObj.email });
     if (!user) {
-      //데이터베이스에 해당 email을 가진 user가 없을 때.
-      //user를 새로만든 user로 정의함
       user = await User.create({
         avatarUrl: userData.avatar_url,
         name: userData.name,
         username: userData.login,
         email: emailObj.email,
-        //password로 로그인 할 수 없음
         password: "",
-        //오직 소셜 로그인으로만 로그인 가능함
         socialOnly: true,
         location: userData.location,
       });
@@ -150,7 +145,6 @@ export const getEdit = (req, res) => {
   return res.render("edit-profile", { pageTitle: "프로필 수정" });
 };
 export const postEdit = async (req, res) => {
-  //ES6문법
   const {
     session: {
       user: { _id, avatarUrl },
@@ -199,19 +193,19 @@ export const postChangePassword = async (req, res) => {
   if (!ok) {
     return res.status(400).render("users/change-password", {
       pageTitle: "비밀번호 변경하기",
-      errorMessage: "현재 비밀번호가 일치하지 않습니다.",
+      errorMessage: "기존 비밀번호가 일치하지 않습니다.",
     });
   }
   if (oldPassword == newPassword) {
     return res.status(400).render("users/change-password", {
       pageTitle: "비밀번호 변경하기",
-      errorMessage: "변경 비밀번호가 이전 비밀번호와 일치합니다.",
+      errorMessage: "새로운 비밀번호가 기존 비밀번호와 일치합니다.",
     });
   }
   if (newPassword !== newPasswordConfirmation) {
     return res.status(400).render("users/change-password", {
       pageTitle: "비밀번호 변경하기",
-      errorMessage: "변경한 비밀번호와 확인 비밀번호가 일치하지 않습니다. ",
+      errorMessage: "새로운 비밀번호와 확인 비밀번호가 일치하지 않습니다. ",
     });
   }
 
