@@ -4,8 +4,10 @@ header {
   justify-content: space-between;
   align-items: center;
   .header__logo {
-    color: $blue;
+    color: #fff;
     font-size: 38px;
+    text-shadow: 0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff, 0 0 42px $neon,
+      0 0 82px $neon, 0 0 92px $neon, 0 0 102px $neon, 0 0 151px $neon;
   }
   ul {
     display: flex;
@@ -23,7 +25,7 @@ header {
   }
   .header__btn {
     background-color: white;
-    color: $bg;
+    color: $bg-base;
     padding: 5px 10px;
     border-radius: 5px;
   }

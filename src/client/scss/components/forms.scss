@@ -3,7 +3,7 @@ form {
   margin: 0 auto;
   &:not(.search__form) {
     padding: 20px;
-    background-color: rgba($color: $bg, $alpha: 0.7);
+    background-color: rgba($color: $bg-base, $alpha: 0.7);
     border-radius: 10px;
     border: 1px solid rgba($color: #fff, $alpha: 0.1);
     width: 1500px;
