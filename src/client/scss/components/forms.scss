@@ -6,7 +6,6 @@ form {
     background-color: rgba($color: $bg-base, $alpha: 0.7);
     border-radius: 10px;
     border: 1px solid rgba($color: #fff, $alpha: 0.1);
-    width: 1500px;
     margin-top: 20px;
   }
 }
@@ -19,9 +18,10 @@ input[type="submit"] {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background-color: black;
   margin-bottom: 5px;
+  margin-top: 10px;
   font-size: 16px;
   color: white;
-  width: 90%;
+  width: 95%;
   &::placeholder {
     color: rgba(255, 255, 255, 0.7);
   }
