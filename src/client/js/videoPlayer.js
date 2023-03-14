@@ -78,11 +78,15 @@ const formatTime = (seconds) =>
 const handleLoadedMetaData = () => {
   totalTime.innerText = formatTime(Math.floor(video.duration));
   timeline.max = Math.floor(video.duration);
+  console.log(video.totalTime);
+  console.log(video.currentTime);
 };
 
 const handleTimeUpdate = () => {
   currentTime.innerText = formatTime(Math.floor(video.currentTime));
   timeline.value = Math.floor(video.currentTime);
+  console.log(video.totalTime);
+  console.log(video.currentTime);
 };
 
 const handleTimelineChange = (event) => {
