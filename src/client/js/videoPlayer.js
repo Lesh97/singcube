@@ -73,7 +73,7 @@ const handleChangeVolumeRange = (event) => {
 };
 
 const formatTime = (seconds) =>
-  new Date(seconds * 1000).toISOString().substring(11, 8);
+  new Date(seconds * 1000).toISOString().substring(14, 19);
 
 const handleLoadedMetaData = () => {
   totalTime.innerText = formatTime(Math.floor(video.duration));
