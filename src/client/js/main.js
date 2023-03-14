@@ -1,8 +1,6 @@
 import "../scss/styles.scss";
 import regeneratorRuntime from "regenerator-runtime";
 
-alert("실행");
-
 const createCircle = () => {
   const bgWhole = document.querySelector(".bghomepage");
   const circle = document.createElement("span");
