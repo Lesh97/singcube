@@ -6,6 +6,8 @@ import {
   postUpload,
   watch,
   deleteVideo,
+  getSingTogether,
+  postSingTogether,
 } from "../controllers/videoController";
 import { protectorMiddleware, videoUpload } from "../middlewares";
 
@@ -26,5 +28,11 @@ videoRouter
   .all(protectorMiddleware)
   .get(getUpload)
   .post(videoUpload.fields([{ name: "video" }, { name: "thumb" }]), postUpload);
-
+videoRouter
+  .route("/singtogether")
+  .get(getSingTogether)
+  .post(
+    videoUpload.fields([{ name: "video" }, { name: "thumb" }]),
+    postSingTogether
+  );
 export default videoRouter;

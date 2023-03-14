@@ -191,3 +191,41 @@ export const deleteComment = async (req, res) => {
     return res.sendStatus(200);
   }
 };
+
+export const getSingTogether = async (req, res) => {
+  console.log(req.params);
+  const { id } = req.params;
+  const video = await Video.findById(id).populate("owner");
+  if (!video) {
+    return res.render("404", { pageTitle: "영상을 찾지 못했습니다." });
+  }
+  return res.render("singtogether", { pageTitle: video.title, video });
+};
+
+export const postSingTogether = async (req, res) => {
+  const {
+    user: { _id },
+  } = req.session;
+  const { video, thumb } = req.files;
+  const { title, description, hashtags } = req.body;
+  const isHeroku = process.env.NODE_ENV === "production";
+  try {
+    const newVideo = await Video.create({
+      title,
+      description,
+      fileUrl: isHeroku ? video[0].location : video[0].path,
+      thumbUrl: isHeroku ? thumb[0].location : video[0].path,
+      owner: _id,
+      hashtags: Video.fortmatHastags(hashtags),
+    });
+    const user = await User.findById(_id);
+    user.videos.push(newVideo._id);
+    user.save();
+    return res.redirect("/");
+  } catch (error) {
+    return res.status(400).render("singtogether", {
+      pageTitle: "영상 수정/추가",
+      errorMessage: error._message,
+    });
+  }
+};

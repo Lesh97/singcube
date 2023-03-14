@@ -1,17 +1,32 @@
+@keyframes inAndOut {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .circle-green {
   position: absolute;
   pointer-events: none;
+  animation: inAndOut 4s ease-in-out forwards;
   background-image: linear-gradient(to right, #2ef27466 0%, #54d88066 100%);
 }
 
 .circle-pink {
   position: absolute;
   pointer-events: none;
+  animation: inAndOut 4s ease-in-out forwards;
   background-image: linear-gradient(to right, #ff33f066 0%, #bc98bb66 100%);
 }
 
 .circle-blue {
   position: absolute;
   pointer-events: none;
+  animation: inAndOut 4s ease-in-out forwards;
   background-image: linear-gradient(to right, #000b97 0%, #0f4c81 100%);
 }
