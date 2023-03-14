@@ -75,18 +75,19 @@ const handleChangeVolumeRange = (event) => {
 const formatTime = (seconds) =>
   new Date(seconds * 1000).toISOString().substring(14, 19);
 
-const handleLoadedMetaData = () => {
+const handleLoadedMetadata = () => {
+  console.log(video.duration);
+  console.log(Math.floor(video.duration));
   totalTime.innerText = formatTime(Math.floor(video.duration));
+  console.log(formatTime(Math.floor(video.duration)));
   timeline.max = Math.floor(video.duration);
-  console.log(video.totalTime);
-  console.log(video.currentTime);
+  console.log(totalTime);
 };
 
 const handleTimeUpdate = () => {
   currentTime.innerText = formatTime(Math.floor(video.currentTime));
   timeline.value = Math.floor(video.currentTime);
-  console.log(video.totalTime);
-  console.log(video.currentTime);
+  console.log(currentTime);
 };
 
 const handleTimelineChange = (event) => {
@@ -154,7 +155,7 @@ volumeRange.addEventListener("input", handleInputVolumeChange);
 volumeRange.addEventListener("change", handleChangeVolumeRange);
 video.readyState
   ? handleLoadedMetaData
-  : video.addEventListener("loadedmetadata", handleLoadedMetaData);
+  : video.addEventListener("loadedmetadata", handleLoadedMetadata);
 video.addEventListener("timeupdate", handleTimeUpdate);
 video.addEventListener("ended", handleEnded);
 videoContainer.addEventListener("mousemove", handleMouseMove);
