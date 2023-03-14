@@ -23,10 +23,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  textarea {
-    width: 1000px;
-    height: 50px;
-  }
 }
 .video__comments {
   display: flex;
@@ -63,11 +59,14 @@
 }
 
 .video__comment-form {
+  display: flex;
+  align-items: center;
   textarea {
-    width: 100%;
+    width: 1100px;
     height: 50px;
     border: none;
     resize: none;
+    margin-right: 10px;
   }
   button {
     width: 60px;
